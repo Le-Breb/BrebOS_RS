@@ -1,0 +1,23 @@
+[package]
+name = "BrebOS_RS"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "BrebOS_RS"
+test = false # Disable tests for the binary target (disables unrelevant warnings)
+bench = false # Disable benchmarks for the binary target (disables unrelevant warnings)
+
+[dependencies]
+bootloader = "0.9"
+spin = "0.10.0"
+
+[dependencies.lazy_static]
+version = "1.5.0"
+features = ["spin_no_std"]
+
+[profile.dev]
+panic = "abort" # Not strictly needed because of .cargo/config.toml, but CLion needs a little help
+
+[profile.release]
+panic = "abort" # Not strictly needed because of .cargo/config.toml, but CLion needs a little help
