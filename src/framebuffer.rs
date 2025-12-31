@@ -1,7 +1,6 @@
-use crate::framebuffer::Color::{Black, White};
 use core::fmt;
-use spin::Mutex;
 use lazy_static::lazy_static;
+use spin::Mutex;
 
 const FB_WIDTH: usize = 80;
 const FB_HEIGHT: usize = 25;
@@ -27,7 +26,7 @@ macro_rules! println {
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
-pub enum Color {
+pub enum FbColor {
     Black = 0,
     Blue = 1,
     Green = 2,
@@ -51,7 +50,7 @@ pub enum Color {
 struct ColorCode(u8);
 
 impl ColorCode {
-    fn new(foreground: Color, background: Color) -> ColorCode {
+    fn new(foreground: FbColor, background: FbColor) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }
@@ -73,7 +72,7 @@ impl From<ColorCode> for u8 {
 }
 
 impl Cell {
-    pub fn new(c: char, bg: Color, fg: Color) -> Self {
+    pub fn new(c: char, bg: FbColor, fg: FbColor) -> Self {
         Cell {
             c,
             color_code: ColorCode::new(fg, bg),
@@ -84,6 +83,8 @@ impl Cell {
 pub struct Framebuffer {
     caret_pos_x: usize,
     caret_pos_y: usize,
+    bg_color: FbColor,
+    fg_color: FbColor,
     buf: [Cell; FB_WIDTH * FB_HEIGHT],
 }
 
@@ -92,7 +93,9 @@ impl Framebuffer {
         Framebuffer {
             caret_pos_x: 0,
             caret_pos_y: 0,
-            buf: [Cell::new(' ', Color::Black, Color::White); FB_WIDTH * FB_HEIGHT],
+            bg_color: FbColor::Black,
+            fg_color: FbColor::White,
+            buf: [Cell::new(' ', FbColor::Black, FbColor::White); FB_WIDTH * FB_HEIGHT],
         }
     }
 
@@ -103,7 +106,29 @@ impl Framebuffer {
     }
 
     pub fn write_char(&mut self, c: char) {
-        self.write_cell(Cell::new(c, Black, White))
+        match c {
+            '\n' => {
+                self.caret_pos_y += 1;
+                if self.caret_pos_y == FB_HEIGHT
+                {
+                    self.scroll();
+                    self.caret_pos_y -= 1;
+                }
+                self.caret_pos_x = 0;
+            }
+            _ => self.write_cell(Cell::new(c, self.bg_color, self.fg_color))
+        }
+    }
+
+    pub fn set_fg_color(&mut self, color: FbColor)
+    {
+        self.fg_color = color;
+    }
+
+    #[allow(dead_code)]
+    pub fn set_bg_color(&mut self, color: FbColor)
+    {
+        self.bg_color = color;
     }
 
     fn write_cell(&mut self, cell: Cell) {
@@ -140,7 +165,7 @@ impl Framebuffer {
 
         const LAST_LINE_OFF: usize = (FB_HEIGHT - 1) * FB_WIDTH;
         for x in 0..FB_WIDTH {
-            self.buf[LAST_LINE_OFF + x] = Cell::new(' ', Black, White);
+            self.buf[LAST_LINE_OFF + x] = Cell::new(' ', FbColor::Black, FbColor::White);
         }
 
         for (idx, cell) in self.buf.iter().enumerate() {

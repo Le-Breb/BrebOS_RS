@@ -8,7 +8,10 @@ use core::panic::PanicInfo;
 
 /// This function is called on panic.
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    framebuffer::FB.lock().set_fg_color(framebuffer::FbColor::Red);
+    println!("{}", info);
+    framebuffer::FB.lock().set_fg_color(framebuffer::FbColor::White);
     loop {}
 }
 
@@ -27,7 +30,7 @@ pub extern "C" fn _start() -> ! {
         print!("n");
     }
 
-    print!("The numbers are {} and {}", 42, 1.0 / 3.0);
+    println!("The numbers are {} and {}", 42, 1.0 / 3.0);
 
     loop {}
 }
