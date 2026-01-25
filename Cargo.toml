@@ -1,23 +1,34 @@
 [package]
-name = "BrebOS_RS"
+name = "brebos_rs"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "BrebOS_RS"
-test = false # Disable tests for the binary target (disables unrelevant warnings)
+name = "brebos_rs"
+test = true # Disable tests for the binary target (disables unrelevant warnings)
 bench = false # Disable benchmarks for the binary target (disables unrelevant warnings)
 
 [dependencies]
 bootloader = "0.9"
 spin = "0.10.0"
+x86_64 = "0.15.4"
+uart_16550 = "0.4.0"
+pic8259 = "0.11.0"
+pc-keyboard = "0.8.0"
 
 [dependencies.lazy_static]
 version = "1.5.0"
 features = ["spin_no_std"]
 
-[profile.dev]
-panic = "abort" # Not strictly needed because of .cargo/config.toml, but CLion needs a little help
+#[profile.dev]
+#panic = "abort" # Not strictly needed because of .cargo/config.toml, but CLion needs a little help
+#
+#[profile.release]
+#panic = "abort" # Not strictly needed because of .cargo/config.toml, but CLion needs a little help
 
-[profile.release]
-panic = "abort" # Not strictly needed because of .cargo/config.toml, but CLion needs a little help
+[package.metadata.bootimage]
+test-args = [
+    "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"
+]
+test-success-exit-code = 33         # (0x10 << 1) | 1
+test-timeout = 300          # (in seconds)
