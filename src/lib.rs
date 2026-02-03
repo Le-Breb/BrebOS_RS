@@ -1,6 +1,7 @@
 #![no_std]
 #![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
+#![feature(abi_x86_interrupt)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
@@ -9,6 +10,12 @@ use core::ops::Fn;
 use core::concat;
 use core::format_args;
 use core::panic::PanicInfo;
+#[cfg(test)]
+use bootloader::{entry_point, BootInfo};
+
+extern crate alloc;
+pub mod allocator;
+pub mod memory;
 
 pub mod serial;
 pub mod framebuffer;
@@ -60,14 +67,24 @@ pub fn test_runner(tests: &[&dyn Testable]) {
     exit_qemu(QemuExitCode::Success);
 }
 
-/// Entry point for `cargo test`
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
-    test_main();
-    loop {}
+entry_point!(test_kernel_main);
+
+pub mod gdt;
+pub mod interrupts;
+pub fn init()
+{
+    gdt::init();
+    interrupts::init();
 }
 
+/// Entry point for `cargo test`
+#[cfg(test)]
+fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
+    init();
+    test_main();
+    hlt_loop();
+}
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
